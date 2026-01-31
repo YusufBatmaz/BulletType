@@ -1,7 +1,8 @@
 export const GameConfig = {
   initialLives: 3,
   initialLevel: 1,
-  pointsPerWord: 10,
+  pointsPerLetter: 1,
+  pointsPerWord: 5,
   pointsForLevelUp: 100,
   baseSpawnInterval: 2500,
   spawnIntervalDecrease: 150,

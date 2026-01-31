@@ -19,6 +19,17 @@ export class GameScene extends Phaser.Scene {
   private livesText!: Phaser.GameObjects.Text;
   private heartsContainer!: Phaser.GameObjects.Container;
   private pauseOverlay!: Phaser.GameObjects.Container;
+
+  // Cheat code sistemi - Konami Code tarzı
+  private cheatCodeSequence: string[] = [];
+  private cheatCodeActive: boolean = false;
+  private cheatCodeText!: Phaser.GameObjects.Text;
+  private autoTypeInterval?: number;
+  
+  // Gizli kod: Yukarı, Yukarı, Aşağı, Aşağı, Sol, Sağ, Sol, Sağ, B, A
+  private readonly SECRET_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 
+                                    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 
+                                    'b', 'a'];
   
   private spawnTimer!: Phaser.Time.TimerEvent;
   private particleEffects!: ParticleEffects;
@@ -158,6 +169,9 @@ export class GameScene extends Phaser.Scene {
     if (this.spawnTimer) {
       this.spawnTimer.remove();
     }
+    if (this.autoTypeInterval) {
+      clearInterval(this.autoTypeInterval);
+    }
     this.input.keyboard?.removeAllListeners();
     this.fallingWords.forEach(word => word.destroy());
     this.fallingWords = [];
@@ -180,7 +194,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createUI(): void {
-    const { width } = this.cameras.main;
+    const { width, height } = this.cameras.main;
 
     // Retro arcade header arka planı (koyu, yarı saydam)
     const headerBg = this.add.rectangle(width / 2, 50, width, 100, 0x000000, 0.7);
@@ -240,6 +254,18 @@ export class GameScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+
+    // Cheat code göstergesi (başlangıçta gizli)
+    this.cheatCodeText = this.add.text(width / 2, height - 30, '', {
+      fontSize: '20px',
+      color: '#ffff00',
+      fontFamily: 'Courier New, monospace',
+      fontStyle: 'bold'
+    });
+    this.cheatCodeText.setOrigin(0.5);
+    this.cheatCodeText.setDepth(1001);
+    this.cheatCodeText.setStroke('#444400', 3);
+    this.cheatCodeText.setVisible(false);
   }
 
   private updateHearts(): void {
@@ -310,6 +336,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Cheat code kontrolü (ok tuşları ve B, A harfleri)
+    if (event.key.startsWith('Arrow') || event.key === 'b' || event.key === 'a' || 
+        event.key === 'B' || event.key === 'A') {
+      this.checkCheatCode(event.key);
+    }
+
+    // Auto-type aktifse normal yazma devre dışı
+    if (this.cheatCodeActive) {
+      return;
+    }
+
     // Sadece harf girişlerini kabul et (Türkçe karakterler dahil)
     if (event.key.length === 1 && /[a-zçğıiöşü]/i.test(event.key)) {
       const typedChar = event.key.toLowerCase();
@@ -317,10 +354,126 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private checkCheatCode(key: string): void {
+    // B ve A harflerini küçük harfe çevir
+    const normalizedKey = (key === 'B' || key === 'A') ? key.toLowerCase() : key;
+    
+    // Diziye ekle
+    this.cheatCodeSequence.push(normalizedKey);
+    
+    // Debug: Mevcut diziyi göster
+    console.log('Current sequence:', this.cheatCodeSequence.join(', '));
+    
+    // Son 10 tuşu tut (kod uzunluğu)
+    if (this.cheatCodeSequence.length > 10) {
+      this.cheatCodeSequence.shift();
+    }
+
+    // Kodu kontrol et
+    if (this.cheatCodeSequence.length === 10) {
+      const isMatch = this.cheatCodeSequence.every((key, index) => 
+        key === this.SECRET_CODE[index]
+      );
+
+      console.log('Checking code:', isMatch);
+      console.log('Expected:', this.SECRET_CODE.join(', '));
+      console.log('Got:', this.cheatCodeSequence.join(', '));
+
+      if (isMatch) {
+        console.log('CHEAT CODE ACTIVATED!');
+        this.activateCheatCode();
+        this.cheatCodeSequence = []; // Sıfırla
+      }
+    }
+  }
+
+  private activateCheatCode(): void {
+    if (this.cheatCodeActive) {
+      // Zaten aktifse kapat
+      this.deactivateCheatCode();
+      return;
+    }
+
+    this.cheatCodeActive = true;
+    
+    // Başarı sesi (retro achievement)
+    this.soundManager.playShoot();
+    this.time.delayedCall(100, () => this.soundManager.playShoot());
+    this.time.delayedCall(200, () => this.soundManager.playExplosion());
+    
+    this.cheatCodeText.setText('⚡ GOD MODE ACTIVATED ⚡');
+    this.cheatCodeText.setVisible(true);
+
+    // Yanıp sönen efekt
+    this.tweens.add({
+      targets: this.cheatCodeText,
+      alpha: 0.5,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // 3 saniye sonra metni gizle ama mod aktif kalsın
+    this.time.delayedCall(3000, () => {
+      this.cheatCodeText.setText('⚡');
+    });
+
+    // Otomatik yazma başlat
+    this.startAutoType();
+  }
+
+  private deactivateCheatCode(): void {
+    this.cheatCodeActive = false;
+    this.cheatCodeText.setVisible(false);
+    this.tweens.killTweensOf(this.cheatCodeText);
+    
+    if (this.autoTypeInterval) {
+      clearInterval(this.autoTypeInterval);
+    }
+  }
+
+  private startAutoType(): void {
+    // Her 100ms'de bir harf yaz
+    this.autoTypeInterval = setInterval(() => {
+      if (!this.cheatCodeActive || this.isPaused) {
+        return;
+      }
+
+      // Aktif hedef varsa devam et
+      let targetWord: FallingWord | null = null;
+      
+      for (const word of this.fallingWords) {
+        if (word.getIsMatched() && word.word.length > 0) {
+          targetWord = word;
+          break;
+        }
+      }
+
+      // Hedef yoksa yeni hedef bul
+      if (!targetWord && this.fallingWords.length > 0) {
+        // En yakın kelimeyi hedefle
+        targetWord = this.fallingWords.reduce((closest, word) => {
+          return word.y > closest.y ? word : closest;
+        });
+      }
+
+      // Hedef varsa ilk harfi yaz
+      if (targetWord && targetWord.word.length > 0) {
+        const nextChar = targetWord.word[0];
+        this.processCharacter(nextChar);
+      }
+    }, 100);
+  }
+
   private cleanupAndExit(): void {
     // Timer'ları temizle
     if (this.spawnTimer) {
       this.spawnTimer.remove();
+    }
+    
+    if (this.autoTypeInterval) {
+      clearInterval(this.autoTypeInterval);
     }
     
     // Keyboard listener'ı temizle
@@ -332,6 +485,7 @@ export class GameScene extends Phaser.Scene {
     
     // Duraklatma durumunu sıfırla
     this.isPaused = false;
+    this.cheatCodeActive = false;
   }
 
   private processCharacter(char: string): void {
@@ -362,6 +516,9 @@ export class GameScene extends Phaser.Scene {
       if (targetWord.word.startsWith(char)) {
         // Harfi kelimeden sil
         targetWord.removeFirstLetter();
+        
+        // Her doğru harf için puan ekle
+        this.addScore(GameConfig.pointsPerLetter);
         
         // Her doğru harf için ateş et
         this.shootLetter(targetWord);
@@ -412,6 +569,7 @@ export class GameScene extends Phaser.Scene {
       }
       target.destroy();
 
+      // Kelime tamamlama bonusu
       this.addScore(GameConfig.pointsPerWord);
     });
   }
