@@ -3,7 +3,7 @@ import { FallingWord } from '../objects/FallingWord';
 import { Plane } from '../objects/Plane';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { SoundManager } from '../audio/SoundManager';
-import { GameConfig, turkishWords } from '../config/GameConfig';
+import { GameConfig, getWordForLevel } from '../config/GameConfig';
 
 export class GameScene extends Phaser.Scene {
   private plane!: Plane;
@@ -308,7 +308,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnWord(): void {
-    const word = Phaser.Utils.Array.GetRandom(turkishWords);
+    const word = getWordForLevel(this.level);
     const x = Phaser.Math.Between(150, this.cameras.main.width - 150);
     const speed = Math.min(
       GameConfig.maxFallSpeed,
