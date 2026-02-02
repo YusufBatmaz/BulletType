@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
+import { SoundManager } from '../audio/SoundManager';
+import { SettingsMenu } from '../ui/SettingsMenu';
 
 export class GameOverScene extends Phaser.Scene {
   private finalScore: number = 0;
+  private settingsMenu!: SettingsMenu;
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -13,6 +16,14 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
+
+    // SoundManager'ı al
+    const menuScene = this.scene.get('MenuScene') as any;
+    const soundManager = menuScene?.constructor.soundManager;
+    
+    if (soundManager) {
+      this.settingsMenu = new SettingsMenu(this, soundManager);
+    }
 
     // Oyun bitti başlığı - Retro stil
     const gameOverText = this.add.text(width / 2, height / 3, 'GAME OVER', {

@@ -4,11 +4,11 @@ import { Plane } from '../objects/Plane';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { SoundManager } from '../audio/SoundManager';
 import { GameConfig, getWordForLevel } from '../config/GameConfig';
+import { SettingsMenu } from '../ui/SettingsMenu';
 
 export class GameScene extends Phaser.Scene {
   private plane!: Plane;
   private fallingWords: FallingWord[] = [];
-  private currentInput: string = '';
   private score: number = 0;
   private level: number = 1;
   private lives: number = 3;
@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
   private livesText!: Phaser.GameObjects.Text;
   private heartsContainer!: Phaser.GameObjects.Container;
   private pauseOverlay!: Phaser.GameObjects.Container;
+  private settingsMenu!: SettingsMenu;
 
   // Cheat code sistemi - Konami Code tarzı
   private cheatCodeSequence: string[] = [];
@@ -72,13 +73,30 @@ export class GameScene extends Phaser.Scene {
 
     // Oyun nesnelerini başlat
     this.particleEffects = new ParticleEffects(this);
-    this.soundManager = new SoundManager();
+    
+    // MenuScene'den gelen SoundManager'ı kullan veya yeni oluştur
+    const menuScene = this.scene.get('MenuScene') as any;
+    if (menuScene && menuScene.constructor.soundManager) {
+      this.soundManager = menuScene.constructor.soundManager;
+    } else {
+      this.soundManager = new SoundManager();
+    }
 
     // Uçak
     this.plane = new Plane(this, width / 2, height - 50);
 
     // UI oluştur
     this.createUI();
+
+    // Ayarlar menüsü oluştur
+    this.settingsMenu = new SettingsMenu(this, this.soundManager, (isOpen) => {
+      // Ayarlar açıldığında oyunu duraklat
+      if (isOpen) {
+        this.pauseGame();
+      } else {
+        this.resumeGame();
+      }
+    });
 
     // Klavye girişi - önceki listener'ı temizle
     this.input.keyboard?.removeAllListeners();
@@ -92,7 +110,6 @@ export class GameScene extends Phaser.Scene {
     this.level = 1;
     this.lives = GameConfig.initialLives;
     this.fallingWords = [];
-    this.currentInput = '';
     this.isPaused = false;
     
     this.updateUI();
@@ -149,18 +166,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private togglePause(): void {
-    this.isPaused = !this.isPaused;
-
     if (this.isPaused) {
-      // Oyunu duraklat
-      this.physics.pause();
-      this.spawnTimer.paused = true;
-      this.pauseOverlay.setVisible(true);
-    } else {
-      // Oyunu devam ettir
-      this.physics.resume();
-      this.spawnTimer.paused = false;
+      this.resumeGame();
       this.pauseOverlay.setVisible(false);
+    } else {
+      this.pauseGame();
+      this.pauseOverlay.setVisible(true);
+    }
+  }
+
+  private pauseGame(): void {
+    this.isPaused = true;
+    this.physics.pause();
+    if (this.spawnTimer) {
+      this.spawnTimer.paused = true;
+    }
+  }
+
+  private resumeGame(): void {
+    this.isPaused = false;
+    this.physics.resume();
+    if (this.spawnTimer) {
+      this.spawnTimer.paused = false;
     }
   }
 
@@ -171,6 +198,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.autoTypeInterval) {
       clearInterval(this.autoTypeInterval);
+    }
+    if (this.settingsMenu) {
+      this.settingsMenu.destroy();
     }
     this.input.keyboard?.removeAllListeners();
     this.fallingWords.forEach(word => word.destroy());
@@ -361,26 +391,18 @@ export class GameScene extends Phaser.Scene {
     // Diziye ekle
     this.cheatCodeSequence.push(normalizedKey);
     
-    // Debug: Mevcut diziyi göster
-    console.log('Current sequence:', this.cheatCodeSequence.join(', '));
-    
     // Son 10 tuşu tut (kod uzunluğu)
     if (this.cheatCodeSequence.length > 10) {
       this.cheatCodeSequence.shift();
     }
 
-    // Kodu kontrol et
+    // Kodu kontrol et - her tuşta kontrol et
     if (this.cheatCodeSequence.length === 10) {
       const isMatch = this.cheatCodeSequence.every((key, index) => 
         key === this.SECRET_CODE[index]
       );
 
-      console.log('Checking code:', isMatch);
-      console.log('Expected:', this.SECRET_CODE.join(', '));
-      console.log('Got:', this.cheatCodeSequence.join(', '));
-
       if (isMatch) {
-        console.log('CHEAT CODE ACTIVATED!');
         this.activateCheatCode();
         this.cheatCodeSequence = []; // Sıfırla
       }
@@ -538,10 +560,6 @@ export class GameScene extends Phaser.Scene {
     // Eğer hiç hedef yoksa ve yanlış harf yazıldıysa hiçbir şey yapma
   }
 
-  private updateWordVisuals(): void {
-    // Bu fonksiyon artık gerekli değil, ama bırakabiliriz
-  }
-
   private shootLetter(target: FallingWord): void {
     this.soundManager.playShoot();
     this.plane.shoot();
@@ -671,7 +689,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.start('GameOverScene', { score: this.score });
   }
 
-  update(time: number, delta: number): void {
+  update(_time: number, delta: number): void {
     // Duraklama modundaysa güncelleme yapma
     if (this.isPaused) {
       return;

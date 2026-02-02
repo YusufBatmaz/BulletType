@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
+import { SoundManager } from '../audio/SoundManager';
+import { SettingsMenu } from '../ui/SettingsMenu';
 
 export class MenuScene extends Phaser.Scene {
+  private static soundManager: SoundManager | null = null;
+  private settingsMenu!: SettingsMenu;
+  
   constructor() {
     super({ key: 'MenuScene' });
   }
@@ -15,6 +20,15 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
+
+    // Müzik sistemini başlat (sadece bir kere)
+    if (!MenuScene.soundManager) {
+      MenuScene.soundManager = new SoundManager();
+      MenuScene.soundManager.playBackgroundMusic();
+    }
+
+    // Ayarlar menüsü oluştur
+    this.settingsMenu = new SettingsMenu(this, MenuScene.soundManager);
 
     // Savaş alanı arka planı
     const battleground = this.add.image(width / 2, height / 2, 'battleground');
