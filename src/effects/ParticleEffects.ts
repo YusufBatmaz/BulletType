@@ -8,17 +8,35 @@ export class ParticleEffects {
   }
 
   createMuzzleFlash(x: number, y: number): void {
-    const particles = this.scene.add.particles(x, y, 'particle', {
-      speed: { min: 100, max: 200 },
-      angle: { min: -120, max: -60 },
-      scale: { start: 1, end: 0 },
-      tint: [0xffd700, 0xff6b6b],
-      lifespan: 300,
-      quantity: 15,
-      blendMode: 'ADD'
+    // Daha küçük ve gerçekçi namlu ateşi
+    const particles = this.scene.add.particles(x, y - 10, 'particle', {
+      speed: { min: 50, max: 100 },
+      angle: { min: -100, max: -80 },
+      scale: { start: 0.4, end: 0 },
+      tint: [0xffff00, 0xffa500, 0xff6b6b],
+      lifespan: 150,
+      quantity: 8,
+      blendMode: 'ADD',
+      alpha: { start: 1, end: 0 }
     });
 
-    this.scene.time.delayedCall(300, () => {
+    // Küçük parlama efekti
+    const flash = this.scene.add.circle(x, y - 10, 4, 0xffff00);
+    flash.setBlendMode(Phaser.BlendModes.ADD);
+    flash.setAlpha(0.8);
+
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 2,
+      alpha: 0,
+      duration: 100,
+      ease: 'Power2',
+      onComplete: () => {
+        flash.destroy();
+      }
+    });
+
+    this.scene.time.delayedCall(150, () => {
       particles.destroy();
     });
   }
@@ -75,24 +93,26 @@ export class ParticleEffects {
   }
 
   createBulletTrail(startX: number, startY: number, endX: number, endY: number): void {
-    const bullet = this.scene.add.circle(startX, startY, 3, 0xffd700);
+    // Daha küçük mermi
+    const bullet = this.scene.add.circle(startX, startY, 2, 0xffff00);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
 
-    // Mermi izi parçacıkları
+    // Daha ince mermi izi
     const trail = this.scene.add.particles(startX, startY, 'particle', {
       follow: bullet,
-      scale: { start: 0.5, end: 0 },
-      tint: [0xffd700, 0xff6b6b],
-      lifespan: 200,
-      frequency: 20,
-      blendMode: 'ADD'
+      scale: { start: 0.3, end: 0 },
+      tint: [0xffff00, 0xffa500],
+      lifespan: 150,
+      frequency: 30,
+      blendMode: 'ADD',
+      alpha: { start: 0.8, end: 0 }
     });
 
     this.scene.tweens.add({
       targets: bullet,
       x: endX,
       y: endY,
-      duration: 300,
+      duration: 200,
       ease: 'Linear',
       onComplete: () => {
         trail.destroy();

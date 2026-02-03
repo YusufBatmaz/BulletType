@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 export class Plane extends Phaser.GameObjects.Image {
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'plane');
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string = 'plane') {
+    super(scene, x, y, texture);
 
     this.setOrigin(0.5);
     this.setScale(0.15); // Boyutu ayarla (gerekirse değiştir)
@@ -17,5 +17,9 @@ export class Plane extends Phaser.GameObjects.Image {
       yoyo: true,
       ease: 'Power2'
     });
+  }
+  
+  changeTexture(texture: string): void {
+    this.setTexture(texture);
   }
 }

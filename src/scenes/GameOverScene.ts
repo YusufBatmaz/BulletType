@@ -22,7 +22,7 @@ export class GameOverScene extends Phaser.Scene {
     const soundManager = menuScene?.constructor.soundManager;
     
     if (soundManager) {
-      this.settingsMenu = new SettingsMenu(this, soundManager);
+      this.settingsMenu = new SettingsMenu(this, soundManager, undefined, undefined);
     }
 
     // Oyun bitti başlığı - Retro stil

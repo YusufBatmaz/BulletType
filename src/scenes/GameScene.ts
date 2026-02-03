@@ -5,6 +5,7 @@ import { ParticleEffects } from '../effects/ParticleEffects';
 import { SoundManager } from '../audio/SoundManager';
 import { GameConfig, getWordForLevel } from '../config/GameConfig';
 import { SettingsMenu } from '../ui/SettingsMenu';
+import { PlaneSelector } from '../config/PlaneConfig';
 
 export class GameScene extends Phaser.Scene {
   private plane!: Plane;
@@ -41,8 +42,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Uçak görselini yükle
-    this.load.image('plane', '/images/ucak.png');
+    // Uçak görsellerini yükle
+    this.load.image('classic', '/images/ucaklar/classic.png');
+    this.load.image('bit-striker', '/images/ucaklar/Bit-Striker.png');
+    this.load.image('sky-warden', '/images/ucaklar/Sky Warden.png');
+    this.load.image('nebula-ghost', '/images/ucaklar/Nebula Ghost.png');
+    this.load.image('apex-sentinel', '/images/ucaklar/Apex Sentinel.png');
+    this.load.image('stormbringer', '/images/ucaklar/Stormbringer.png');
     
     // Asteroid görselini yükle
     this.load.image('asteroid', '/images/asteroid.png');
@@ -83,20 +89,29 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Uçak
-    this.plane = new Plane(this, width / 2, height - 50);
+    const selectedTexture = PlaneSelector.getSelectedTexture();
+    this.plane = new Plane(this, width / 2, height - 50, selectedTexture);
 
     // UI oluştur
     this.createUI();
 
     // Ayarlar menüsü oluştur
-    this.settingsMenu = new SettingsMenu(this, this.soundManager, (isOpen) => {
-      // Ayarlar açıldığında oyunu duraklat
-      if (isOpen) {
-        this.pauseGame();
-      } else {
-        this.resumeGame();
+    this.settingsMenu = new SettingsMenu(
+      this, 
+      this.soundManager, 
+      (isOpen) => {
+        // Ayarlar açıldığında oyunu duraklat
+        if (isOpen) {
+          this.pauseGame();
+        } else {
+          this.resumeGame();
+        }
+      },
+      (texture) => {
+        // Uçak değiştirildiğinde
+        this.plane.changeTexture(texture);
       }
-    });
+    );
 
     // Klavye girişi - önceki listener'ı temizle
     this.input.keyboard?.removeAllListeners();

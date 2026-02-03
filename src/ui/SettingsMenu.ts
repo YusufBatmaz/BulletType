@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SoundManager } from '../audio/SoundManager';
+import { planeOptions, PlaneSelector } from '../config/PlaneConfig';
 
 export class SettingsMenu {
   private scene: Phaser.Scene;
@@ -8,13 +9,103 @@ export class SettingsMenu {
   private isOpen: boolean = false;
   private settingsButton!: Phaser.GameObjects.Container;
   private onToggle?: (isOpen: boolean) => void;
+  private onPlaneChange?: (texture: string) => void;
 
-  constructor(scene: Phaser.Scene, soundManager: SoundManager, onToggle?: (isOpen: boolean) => void) {
+  constructor(
+    scene: Phaser.Scene, 
+    soundManager: SoundManager, 
+    onToggle?: (isOpen: boolean) => void,
+    onPlaneChange?: (texture: string) => void
+  ) {
     this.scene = scene;
     this.soundManager = soundManager;
     this.onToggle = onToggle;
+    this.onPlaneChange = onPlaneChange;
     this.createSettingsButton();
     this.createSettingsPanel();
+  }
+
+  private createPlaneSelector(x: number, y: number): void {
+    // Uçak seçimi etiketi
+    const label = this.scene.add.text(x, y - 60, 'PLANE', {
+      fontSize: '28px',
+      color: '#00ffff',
+      fontFamily: 'Courier New, monospace',
+      fontStyle: 'bold'
+    });
+    label.setOrigin(0.5);
+    label.setStroke('#004444', 3);
+    this.container.add(label);
+
+    const selectedPlaneId = PlaneSelector.getSelectedPlane();
+    const cols = 3;
+    const spacing = 100;
+    const rowSpacing = 110;
+
+    planeOptions.forEach((plane, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const planeX = x - spacing + (col * spacing);
+      const planeY = y + (row * rowSpacing);
+      const isSelected = plane.id === selectedPlaneId;
+
+      // Uçak önizleme kutusu
+      const box = this.scene.add.rectangle(planeX, planeY, 80, 80, 0x000000, 0.8);
+      box.setStrokeStyle(3, isSelected ? 0x00ff00 : 0x333333);
+      box.setInteractive({ useHandCursor: true });
+      this.container.add(box);
+
+      // Uçak görseli
+      if (this.scene.textures.exists(plane.texture)) {
+        const planeDisplay = this.scene.add.image(planeX, planeY, plane.texture);
+        planeDisplay.setScale(0.09);
+        this.container.add(planeDisplay);
+      }
+
+      // İsim (her uçak için göster)
+      const nameText = this.scene.add.text(planeX, planeY + 50, plane.name, {
+        fontSize: '11px',
+        color: isSelected ? '#00ff00' : '#666666',
+        fontFamily: 'Courier New, monospace',
+        fontStyle: isSelected ? 'bold' : 'normal'
+      });
+      nameText.setOrigin(0.5);
+      if (isSelected) {
+        nameText.setStroke('#004400', 2);
+      }
+      this.container.add(nameText);
+
+      // Hover efekti
+      box.on('pointerover', () => {
+        if (!isSelected) {
+          box.setStrokeStyle(3, 0x00ffff);
+          box.setScale(1.05);
+        }
+      });
+
+      box.on('pointerout', () => {
+        if (!isSelected) {
+          box.setStrokeStyle(3, 0x333333);
+          box.setScale(1);
+        }
+      });
+
+      box.on('pointerdown', () => {
+        PlaneSelector.setSelectedPlane(plane.id);
+        
+        if (this.onPlaneChange) {
+          this.onPlaneChange(plane.texture);
+        }
+        
+        const wasOpen = this.isOpen;
+        this.container.destroy();
+        this.createSettingsPanel();
+        
+        if (wasOpen) {
+          this.container.setVisible(true);
+        }
+      });
+    });
   }
 
   private createSettingsButton(): void {
@@ -76,14 +167,14 @@ export class SettingsMenu {
     this.container.add(overlay);
 
     // Panel arka planı
-    const panelWidth = 400;
-    const panelHeight = 370;
+    const panelWidth = 450;
+    const panelHeight = 500;
     const panelBg = this.scene.add.rectangle(width / 2, height / 2, panelWidth, panelHeight, 0x000000, 0.95);
     panelBg.setStrokeStyle(4, 0x00ffff);
     this.container.add(panelBg);
 
     // Başlık
-    const title = this.scene.add.text(width / 2, height / 2 - 150, 'SETTINGS', {
+    const title = this.scene.add.text(width / 2, height / 2 - 220, 'SETTINGS', {
       fontSize: '36px',
       color: '#00ffff',
       fontFamily: 'Courier New, monospace',
@@ -93,190 +184,218 @@ export class SettingsMenu {
     title.setStroke('#004444', 4);
     this.container.add(title);
 
-    // Müzik kontrolü
-    this.createMusicControl(width / 2, height / 2 - 80);
+    // Uçak seçimi
+    this.createPlaneSelector(width / 2, height / 2 - 125);
+
+    // Müzik kontrolü (daha aşağıda)
+    this.createMusicControl(width / 2, height / 2 + 75);
 
     // Efekt sesleri kontrolü
-    this.createEffectsControl(width / 2, height / 2 + 20);
+    this.createEffectsControl(width / 2, height / 2 + 125);
 
     // Kapat butonu
-    this.createCloseButton(width / 2, height / 2 + 130);
+    this.createCloseButton(width / 2, height / 2 + 200);
   }
 
   private createMusicControl(x: number, y: number): void {
-    // Müzik etiketi
-    const label = this.scene.add.text(x - 150, y, 'MUSIC', {
-      fontSize: '24px',
-      color: '#ffffff',
+    // Müzik etiketi (sola)
+    const label = this.scene.add.text(x - 190, y, 'MUSIC', {
+      fontSize: '20px',
+      color: '#00ffff',
       fontFamily: 'Courier New, monospace',
       fontStyle: 'bold'
     });
     label.setOrigin(0, 0.5);
+    label.setStroke('#004444', 2);
     this.container.add(label);
 
-    // Skip butonu (müzik atlama)
-    const skipBtn = this.scene.add.rectangle(x + 60, y, 60, 40, 0x000000);
-    skipBtn.setStrokeStyle(2, 0xffff00);
-    skipBtn.setInteractive({ useHandCursor: true });
-    this.container.add(skipBtn);
+    // Slider arka planı (ortada, daha kısa)
+    const sliderBg = this.scene.add.rectangle(x, y, 140, 8, 0x333333);
+    this.container.add(sliderBg);
 
-    const skipBtnText = this.scene.add.text(x + 60, y, '⏭️', {
-      fontSize: '24px'
+    // Slider dolgu
+    const sliderFill = this.scene.add.rectangle(x - 70, y, 140, 8, 0x00ffff);
+    sliderFill.setOrigin(0, 0.5);
+    this.container.add(sliderFill);
+
+    // Slider handle
+    const handle = this.scene.add.circle(x + 70, y, 12, 0x00ffff);
+    handle.setStrokeStyle(2, 0xffffff);
+    handle.setInteractive({ useHandCursor: true, draggable: true });
+    this.container.add(handle);
+
+    // Previous butonu
+    const prevBtn = this.scene.add.rectangle(x + 110, y, 35, 35, 0x000000, 0.8);
+    prevBtn.setStrokeStyle(2, 0xffff00);
+    prevBtn.setInteractive({ useHandCursor: true });
+    this.container.add(prevBtn);
+
+    const prevBtnText = this.scene.add.text(x + 110, y, '⏮️', {
+      fontSize: '20px'
     });
-    skipBtnText.setOrigin(0.5);
-    this.container.add(skipBtnText);
+    prevBtnText.setOrigin(0.5);
+    this.container.add(prevBtnText);
 
-    skipBtn.on('pointerover', () => {
-      skipBtn.setFillStyle(0xffff00, 0.2);
-      skipBtnText.setScale(1.1);
+    // Next butonu
+    const nextBtn = this.scene.add.rectangle(x + 150, y, 35, 35, 0x000000, 0.8);
+    nextBtn.setStrokeStyle(2, 0xffff00);
+    nextBtn.setInteractive({ useHandCursor: true });
+    this.container.add(nextBtn);
+
+    const nextBtnText = this.scene.add.text(x + 150, y, '⏭️', {
+      fontSize: '20px'
     });
+    nextBtnText.setOrigin(0.5);
+    this.container.add(nextBtnText);
 
-    skipBtn.on('pointerout', () => {
-      skipBtn.setFillStyle(0x000000);
-      skipBtnText.setScale(1);
+    // Mute butonu
+    const muteBtn = this.scene.add.rectangle(x + 190, y, 35, 35, 0x000000, 0.8);
+    muteBtn.setStrokeStyle(2, 0xff6600);
+    muteBtn.setInteractive({ useHandCursor: true });
+    this.container.add(muteBtn);
+
+    const muteBtnText = this.scene.add.text(x + 190, y, '🔊', {
+      fontSize: '20px'
     });
+    muteBtnText.setOrigin(0.5);
+    this.container.add(muteBtnText);
 
-    skipBtn.on('pointerdown', () => {
-      this.soundManager.skipToNextTrack();
-      // Kısa animasyon
+    // Previous hover
+    prevBtn.on('pointerover', () => {
+      prevBtn.setFillStyle(0xffff00, 0.3);
+    });
+    prevBtn.on('pointerout', () => {
+      prevBtn.setFillStyle(0x000000, 0.8);
+    });
+    prevBtn.on('pointerdown', () => {
+      this.soundManager.skipToPreviousTrack();
       this.scene.tweens.add({
-        targets: skipBtnText,
+        targets: prevBtnText,
+        angle: -360,
+        duration: 300,
+        ease: 'Back.easeOut'
+      });
+    });
+
+    // Next hover
+    nextBtn.on('pointerover', () => {
+      nextBtn.setFillStyle(0xffff00, 0.3);
+    });
+    nextBtn.on('pointerout', () => {
+      nextBtn.setFillStyle(0x000000, 0.8);
+    });
+    nextBtn.on('pointerdown', () => {
+      this.soundManager.skipToNextTrack();
+      this.scene.tweens.add({
+        targets: nextBtnText,
         angle: 360,
         duration: 300,
         ease: 'Back.easeOut'
       });
     });
 
-    // Mute butonu
-    const muteBtn = this.scene.add.rectangle(x + 130, y, 60, 40, 0x000000);
-    muteBtn.setStrokeStyle(2, 0xff6600);
-    muteBtn.setInteractive({ useHandCursor: true });
-    this.container.add(muteBtn);
-
-    const muteBtnText = this.scene.add.text(x + 130, y, '🔊', {
-      fontSize: '24px'
-    });
-    muteBtnText.setOrigin(0.5);
-    this.container.add(muteBtnText);
-
+    // Mute hover
     muteBtn.on('pointerover', () => {
-      muteBtn.setFillStyle(0xff6600, 0.2);
+      muteBtn.setFillStyle(0xff6600, 0.3);
     });
-
     muteBtn.on('pointerout', () => {
-      muteBtn.setFillStyle(0x000000);
+      muteBtn.setFillStyle(0x000000, 0.8);
     });
-
     muteBtn.on('pointerdown', () => {
       const isMuted = this.soundManager.toggleMusicMute();
       muteBtnText.setText(isMuted ? '🔇' : '🔊');
     });
 
-    // Slider arka planı
-    const sliderBg = this.scene.add.rectangle(x, y + 40, 200, 8, 0x444444);
-    this.container.add(sliderBg);
-
-    // Slider dolgu
-    const sliderFill = this.scene.add.rectangle(x - 100, y + 40, 200, 8, 0x00ffff);
-    sliderFill.setOrigin(0, 0.5);
-    this.container.add(sliderFill);
-
-    // Slider handle
-    const handle = this.scene.add.circle(x + 100, y + 40, 12, 0x00ffff);
-    handle.setStrokeStyle(2, 0xffffff);
-    handle.setInteractive({ useHandCursor: true, draggable: true });
-    this.container.add(handle);
-
     // Drag işlemi
     this.scene.input.on('drag', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject, dragX: number) => {
       if (gameObject === handle) {
-        const minX = x - 100;
-        const maxX = x + 100;
+        const minX = x - 70;
+        const maxX = x + 70;
         const clampedX = Phaser.Math.Clamp(dragX, minX, maxX);
         handle.x = clampedX;
         
         const volume = (clampedX - minX) / (maxX - minX);
-        sliderFill.width = 200 * volume;
+        sliderFill.width = 140 * volume;
         this.soundManager.setMusicVolume(volume);
       }
     });
 
     // Başlangıç pozisyonu
     const initialVolume = this.soundManager.getMusicVolume();
-    handle.x = x - 100 + (200 * initialVolume);
-    sliderFill.width = 200 * initialVolume;
+    handle.x = x - 70 + (140 * initialVolume);
+    sliderFill.width = 140 * initialVolume;
     muteBtnText.setText(this.soundManager.isMusicMutedState() ? '🔇' : '🔊');
   }
 
   private createEffectsControl(x: number, y: number): void {
-    // Efekt sesleri etiketi
-    const label = this.scene.add.text(x - 150, y, 'EFFECTS', {
-      fontSize: '24px',
-      color: '#ffffff',
+    // Efekt sesleri etiketi (sola)
+    const label = this.scene.add.text(x - 190, y, 'EFFECTS', {
+      fontSize: '20px',
+      color: '#00ff00',
       fontFamily: 'Courier New, monospace',
       fontStyle: 'bold'
     });
     label.setOrigin(0, 0.5);
+    label.setStroke('#004400', 2);
     this.container.add(label);
 
-    // Mute butonu
-    const muteBtn = this.scene.add.rectangle(x + 120, y, 60, 40, 0x000000);
+    // Slider arka planı (ortada, daha kısa)
+    const sliderBg = this.scene.add.rectangle(x, y, 140, 8, 0x333333);
+    this.container.add(sliderBg);
+
+    // Slider dolgu
+    const sliderFill = this.scene.add.rectangle(x - 70, y, 140, 8, 0x00ff00);
+    sliderFill.setOrigin(0, 0.5);
+    this.container.add(sliderFill);
+
+    // Slider handle
+    const handle = this.scene.add.circle(x + 70, y, 12, 0x00ff00);
+    handle.setStrokeStyle(2, 0xffffff);
+    handle.setInteractive({ useHandCursor: true, draggable: true });
+    this.container.add(handle);
+
+    // Mute butonu (sağda)
+    const muteBtn = this.scene.add.rectangle(x + 130, y, 35, 35, 0x000000, 0.8);
     muteBtn.setStrokeStyle(2, 0xff6600);
     muteBtn.setInteractive({ useHandCursor: true });
     this.container.add(muteBtn);
 
-    const muteBtnText = this.scene.add.text(x + 120, y, '🔊', {
-      fontSize: '24px'
+    const muteBtnText = this.scene.add.text(x + 130, y, '🔊', {
+      fontSize: '20px'
     });
     muteBtnText.setOrigin(0.5);
     this.container.add(muteBtnText);
 
+    // Mute hover
     muteBtn.on('pointerover', () => {
-      muteBtn.setFillStyle(0xff6600, 0.2);
+      muteBtn.setFillStyle(0xff6600, 0.3);
     });
-
     muteBtn.on('pointerout', () => {
-      muteBtn.setFillStyle(0x000000);
+      muteBtn.setFillStyle(0x000000, 0.8);
     });
-
     muteBtn.on('pointerdown', () => {
       const isMuted = this.soundManager.toggleEffectsMute();
       muteBtnText.setText(isMuted ? '🔇' : '🔊');
     });
 
-    // Slider arka planı
-    const sliderBg = this.scene.add.rectangle(x, y + 40, 200, 8, 0x444444);
-    this.container.add(sliderBg);
-
-    // Slider dolgu
-    const sliderFill = this.scene.add.rectangle(x - 100, y + 40, 200, 8, 0x00ff00);
-    sliderFill.setOrigin(0, 0.5);
-    this.container.add(sliderFill);
-
-    // Slider handle
-    const handle = this.scene.add.circle(x + 100, y + 40, 12, 0x00ff00);
-    handle.setStrokeStyle(2, 0xffffff);
-    handle.setInteractive({ useHandCursor: true, draggable: true });
-    this.container.add(handle);
-
     // Drag işlemi
     this.scene.input.on('drag', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject, dragX: number) => {
       if (gameObject === handle) {
-        const minX = x - 100;
-        const maxX = x + 100;
+        const minX = x - 70;
+        const maxX = x + 70;
         const clampedX = Phaser.Math.Clamp(dragX, minX, maxX);
         handle.x = clampedX;
         
         const volume = (clampedX - minX) / (maxX - minX);
-        sliderFill.width = 200 * volume;
+        sliderFill.width = 140 * volume;
         this.soundManager.setEffectsVolume(volume);
       }
     });
 
     // Başlangıç pozisyonu
     const initialVolume = this.soundManager.getEffectsVolume();
-    handle.x = x - 100 + (200 * initialVolume);
-    sliderFill.width = 200 * initialVolume;
+    handle.x = x - 70 + (140 * initialVolume);
+    sliderFill.width = 140 * initialVolume;
     muteBtnText.setText(this.soundManager.areEffectsMutedState() ? '🔇' : '🔊');
   }
 

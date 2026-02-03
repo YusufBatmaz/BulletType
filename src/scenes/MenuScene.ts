@@ -5,14 +5,20 @@ import { SettingsMenu } from '../ui/SettingsMenu';
 export class MenuScene extends Phaser.Scene {
   private static soundManager: SoundManager | null = null;
   private settingsMenu!: SettingsMenu;
+  private visibilityHandler?: () => void;
   
   constructor() {
     super({ key: 'MenuScene' });
   }
 
   preload(): void {
-    // Uçak görselini yükle
-    this.load.image('plane', '/images/ucak.png');
+    // Uçak görsellerini yükle
+    this.load.image('classic', '/images/ucaklar/classic.png');
+    this.load.image('bit-striker', '/images/ucaklar/Bit-Striker.png');
+    this.load.image('sky-warden', '/images/ucaklar/Sky Warden.png');
+    this.load.image('nebula-ghost', '/images/ucaklar/Nebula Ghost.png');
+    this.load.image('apex-sentinel', '/images/ucaklar/Apex Sentinel.png');
+    this.load.image('stormbringer', '/images/ucaklar/Stormbringer.png');
     
     // Savaş arka planını yükle (menü için)
     this.load.image('battleground', '/images/savas.png');
@@ -25,10 +31,21 @@ export class MenuScene extends Phaser.Scene {
     if (!MenuScene.soundManager) {
       MenuScene.soundManager = new SoundManager();
       MenuScene.soundManager.playBackgroundMusic();
+      
+      // Page Visibility API - Sekme değiştiğinde müziği duraklat/devam ettir
+      this.visibilityHandler = () => {
+        if (document.hidden) {
+          MenuScene.soundManager?.pauseMusic();
+        } else {
+          MenuScene.soundManager?.resumeMusic();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', this.visibilityHandler);
     }
 
     // Ayarlar menüsü oluştur
-    this.settingsMenu = new SettingsMenu(this, MenuScene.soundManager);
+    this.settingsMenu = new SettingsMenu(this, MenuScene.soundManager, undefined, undefined);
 
     // Savaş alanı arka planı
     const battleground = this.add.image(width / 2, height / 2, 'battleground');
@@ -47,7 +64,7 @@ export class MenuScene extends Phaser.Scene {
     title.setOrigin(0.5);
 
     // Uçak görseli
-    const plane = this.add.image(width / 2, height / 2, 'plane');
+    const plane = this.add.image(width / 2, height / 2, 'classic');
     plane.setOrigin(0.5);
     plane.setScale(0.2);
 
@@ -101,5 +118,12 @@ export class MenuScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+  }
+  
+  shutdown(): void {
+    // Visibility listener'ı temizle
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
   }
 }

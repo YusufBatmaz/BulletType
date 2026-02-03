@@ -12,6 +12,7 @@ export class SoundManager {
   private effectsVolume: number = 1.0;
   private isMusicMuted: boolean = false;
   private areEffectsMuted: boolean = false;
+  private currentTrackIndex: number = -1;
   
   // Müzik listesi
   private musicTracks: string[] = [
@@ -57,7 +58,6 @@ export class SoundManager {
     
     // Önce gerçek ses dosyasını dene
     if (this.shootSound.state() === 'loaded') {
-      this.shootSound.volume(0.2 * this.effectsVolume);
       this.shootSound.play();
     } else {
       // Fallback: Prosedürel ses
@@ -70,7 +70,6 @@ export class SoundManager {
     
     // Önce gerçek ses dosyasını dene
     if (this.explosionSound.state() === 'loaded') {
-      this.explosionSound.volume(0.15 * this.effectsVolume);
       this.explosionSound.play();
     } else {
       // Fallback: Prosedürel ses
@@ -83,7 +82,6 @@ export class SoundManager {
     
     // Önce gerçek ses dosyasını dene
     if (this.hitSound.state() === 'loaded') {
-      this.hitSound.volume(0.2 * this.effectsVolume);
       this.hitSound.play();
     } else {
       // Fallback: Prosedürel ses
@@ -170,6 +168,49 @@ export class SoundManager {
     this.playRandomTrack();
   }
   
+  skipToPreviousTrack(): void {
+    // Önceki şarkıya dön
+    if (this.currentMusic) {
+      this.currentMusic.stop();
+      this.currentMusic.unload();
+    }
+    
+    // Eğer çalınan şarkı listesi varsa, önceki şarkıyı çal
+    if (this.playedTracks.length > 1) {
+      // Son çalınan şarkıyı çıkar
+      this.playedTracks.pop();
+      // Bir önceki şarkıyı al
+      const previousTrack = this.playedTracks.pop();
+      
+      if (previousTrack) {
+        // Önceki şarkıyı çal
+        this.playedTracks.push(previousTrack);
+        
+        this.currentMusic = new Howl({
+          src: [previousTrack],
+          volume: this.isMusicMuted ? 0 : this.musicVolume,
+          loop: false,
+          onend: () => {
+            this.playRandomTrack();
+          },
+          onloaderror: (id, error) => {
+            console.log(`Music load error: ${previousTrack}`, error);
+            this.playRandomTrack();
+          }
+        });
+        
+        this.currentMusic.play();
+        console.log(`Now playing (previous): ${previousTrack.split('/').pop()}`);
+      } else {
+        // Önceki şarkı yoksa rastgele çal
+        this.playRandomTrack();
+      }
+    } else {
+      // Geçmiş yoksa rastgele çal
+      this.playRandomTrack();
+    }
+  }
+  
   private playRandomTrack(): void {
     // Eğer tüm şarkılar çalındıysa listeyi sıfırla
     if (this.playedTracks.length === this.musicTracks.length) {
@@ -224,6 +265,10 @@ export class SoundManager {
   
   setEffectsVolume(volume: number): void {
     this.effectsVolume = Math.max(0, Math.min(1, volume));
+    // Efekt seslerinin volume'unu güncelle
+    this.shootSound.volume(0.2 * this.effectsVolume);
+    this.explosionSound.volume(0.15 * this.effectsVolume);
+    this.hitSound.volume(0.2 * this.effectsVolume);
   }
   
   toggleMusicMute(): boolean {
@@ -253,5 +298,17 @@ export class SoundManager {
   
   getEffectsVolume(): number {
     return this.effectsVolume;
+  }
+  
+  pauseMusic(): void {
+    if (this.currentMusic && this.currentMusic.playing()) {
+      this.currentMusic.pause();
+    }
+  }
+  
+  resumeMusic(): void {
+    if (this.currentMusic && !this.currentMusic.playing() && !this.isMusicMuted) {
+      this.currentMusic.play();
+    }
   }
 }
