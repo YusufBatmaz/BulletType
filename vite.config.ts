@@ -5,9 +5,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    minify: 'esbuild', // terser yerine esbuild kullan (Vercel'de sorun çıkarmaz)
     sourcemap: false,
-    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks: {
