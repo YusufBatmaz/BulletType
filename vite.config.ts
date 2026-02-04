@@ -5,9 +5,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    minify: 'terser',
+    minify: 'esbuild', // terser yerine esbuild kullan (Vercel'de sorun çıkarmaz)
     sourcemap: false,
-    chunkSizeWarningLimit: 2000, // Phaser büyük bir kütüphane, uyarıyı 2MB'a çıkar
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks: {

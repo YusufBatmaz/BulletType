@@ -10,8 +10,7 @@
   "dependencies": {
     "firebase": "^12.8.0",
     "howler": "^2.2.4",
-    "phaser": "^3.80.1",
-    "terser": "^5.46.0"
+    "phaser": "^3.80.1"
   },
   "devDependencies": {
     "@types/howler": "^2.2.11",
