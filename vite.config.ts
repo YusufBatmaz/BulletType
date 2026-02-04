@@ -6,7 +6,16 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     minify: 'terser',
-    sourcemap: false
+    sourcemap: false,
+    chunkSizeWarningLimit: 2000, // Phaser büyük bir kütüphane, uyarıyı 2MB'a çıkar
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ['phaser'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore']
+        }
+      }
+    }
   },
   server: {
     port: 3000,
