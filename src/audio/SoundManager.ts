@@ -17,9 +17,14 @@ export class SoundManager {
   // Müzik listesi
   private musicTracks: string[] = [
     '/sounds/Musics/Chiptune Arcade Game Music.mp3',
+    '/sounds/Musics/Fun With My 8-Bit Game.mp3',
+    '/sounds/Musics/Hype Drill Music.mp3',
     '/sounds/Musics/Level IX Short.mp3',
+    '/sounds/Musics/Night look. Hip-Hop Background Music.mp3',
     '/sounds/Musics/Pixelated Alien.mp3',
-    '/sounds/Musics/Retro Arcade Beat – 8-Bit Lo-fi Music.mp3'
+    '/sounds/Musics/Retro Arcade Beat – 8-Bit Lo-fi Music.mp3',
+    '/sounds/Musics/Retro Vintage Rock and Roll.mp3',
+    '/sounds/Musics/Symphony of the Streets..mp3'
   ];
   
   private playedTracks: string[] = [];

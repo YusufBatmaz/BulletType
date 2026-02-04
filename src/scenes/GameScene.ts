@@ -537,42 +537,43 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Eğer aktif hedef yoksa, yeni hedef bul
-    if (!targetWord) {
-      for (const word of this.fallingWords) {
-        if (word.word.startsWith(char)) {
-          targetWord = word;
-          break;
-        }
-      }
-    }
-
-    // Hedef varsa kontrol et
+    // Hedef varsa ve doğru harf mi kontrol et
     if (targetWord) {
-      // Doğru harf mi?
       if (targetWord.word.startsWith(char)) {
-        // Harfi kelimeden sil
+        // Doğru harf - devam et
         targetWord.removeFirstLetter();
-        
-        // Her doğru harf için puan ekle
         this.addScore(GameConfig.pointsPerLetter);
-        
-        // Her doğru harf için ateş et
         this.shootLetter(targetWord);
-        
-        // Hedefi işaretle
         targetWord.setMatched(true);
         
-        // Kelime tamamlandıysa
         if (targetWord.isComplete()) {
           this.completeWord(targetWord);
         }
+        return; // İşlem tamamlandı, çık
       } else {
-        // Yanlış harf - hedefi serbest bırak ama harfi silme
+        // Yanlış harf - hedefi serbest bırak
         targetWord.setMatched(false);
+        // Yeni kelime aramaya devam et (aşağıda)
       }
     }
-    // Eğer hiç hedef yoksa ve yanlış harf yazıldıysa hiçbir şey yapma
+
+    // Aktif hedef yoksa veya yanlış harf yazıldıysa, yeni hedef bul
+    for (const word of this.fallingWords) {
+      if (word.word.startsWith(char)) {
+        // Yeni hedef bulundu
+        word.removeFirstLetter();
+        this.addScore(GameConfig.pointsPerLetter);
+        this.shootLetter(word);
+        word.setMatched(true);
+        
+        if (word.isComplete()) {
+          this.completeWord(word);
+        }
+        return; // İşlem tamamlandı, çık
+      }
+    }
+    
+    // Hiçbir kelime eşleşmedi - hiçbir şey yapma
   }
 
   private shootLetter(target: FallingWord): void {
