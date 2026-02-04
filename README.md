@@ -118,9 +118,9 @@ http://localhost:5173
 
 ## 🏆 Skor Sistemi
 
-- **Harf Başına**: 10 puan
-- **Kelime Tamamlama**: 50 puan bonus
-- **Seviye Atlama**: Her 500 puanda yeni seviye
+- **Harf Başına**: 1 puan
+- **Kelime Tamamlama**: 5 puan bonus
+- **Seviye Atlama**: Her 100 puanda yeni seviye
 - **En Yüksek Skor**: Sadece en yüksek skorunuz kaydedilir
 
 ## 🎨 Uçak Modelleri
@@ -332,7 +332,7 @@ Ticari kullanım veya işbirliği için lütfen iletişime geçin.
 
 ## 📧 İletişim
 
-Sorularınız veya önerileriniz için:
+Sorularınız veya önerileriniz için
 - GitHub Issues: [Proje Issues Sayfası]
 - Email: [email@example.com]
 
@@ -340,4 +340,4 @@ Sorularınız veya önerileriniz için:
 
 ⭐ Projeyi beğendiyseniz yıldız vermeyi unutmayın!
 
-<!-- EKRAN GÖRÜNTÜSÜ: Game Over ekranı -->
+<!-- EKRAN GÖRÜNTüSÜ: Game Over ekranı -->
