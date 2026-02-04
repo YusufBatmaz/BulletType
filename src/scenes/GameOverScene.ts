@@ -5,6 +5,7 @@ import { SettingsMenu } from '../ui/SettingsMenu';
 export class GameOverScene extends Phaser.Scene {
   private finalScore: number = 0;
   private settingsMenu!: SettingsMenu;
+  private spaceBackground!: Phaser.GameObjects.TileSprite;
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -12,6 +13,11 @@ export class GameOverScene extends Phaser.Scene {
 
   init(data: { score: number }): void {
     this.finalScore = data.score;
+  }
+  
+  preload(): void {
+    // Savaş arka planını yükle
+    this.load.image('battleground', '/images/savas.png');
   }
 
   create(): void {
@@ -24,6 +30,13 @@ export class GameOverScene extends Phaser.Scene {
     if (soundManager) {
       this.settingsMenu = new SettingsMenu(this, soundManager, undefined, undefined);
     }
+
+    // Savaş alanı arka planı - TileSprite ile scrolling efekti
+    this.spaceBackground = this.add.tileSprite(0, 0, width, height, 'battleground');
+    this.spaceBackground.setOrigin(0, 0);
+    this.spaceBackground.setDepth(-1);
+    this.spaceBackground.setAlpha(0.3);
+    this.spaceBackground.setTint(0x8888aa); // Hafif mavi-gri ton
 
     // Oyun bitti başlığı - Retro stil
     const gameOverText = this.add.text(width / 2, height / 3, 'GAME OVER', {
@@ -122,5 +135,10 @@ export class GameOverScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+  }
+  
+  update(): void {
+    // Savaş arka planını hareket ettir
+    this.spaceBackground.tilePositionY -= 0.3;
   }
 }

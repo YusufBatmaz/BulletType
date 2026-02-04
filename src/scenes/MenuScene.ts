@@ -6,6 +6,7 @@ export class MenuScene extends Phaser.Scene {
   private static soundManager: SoundManager | null = null;
   private settingsMenu!: SettingsMenu;
   private visibilityHandler?: () => void;
+  private spaceBackground!: Phaser.GameObjects.TileSprite;
   
   constructor() {
     super({ key: 'MenuScene' });
@@ -20,7 +21,7 @@ export class MenuScene extends Phaser.Scene {
     this.load.image('apex-sentinel', '/images/ucaklar/Apex Sentinel.png');
     this.load.image('stormbringer', '/images/ucaklar/Stormbringer.png');
     
-    // Savaş arka planını yükle (menü için)
+    // Savaş arka planını yükle
     this.load.image('battleground', '/images/savas.png');
   }
 
@@ -47,11 +48,12 @@ export class MenuScene extends Phaser.Scene {
     // Ayarlar menüsü oluştur
     this.settingsMenu = new SettingsMenu(this, MenuScene.soundManager, undefined, undefined);
 
-    // Savaş alanı arka planı
-    const battleground = this.add.image(width / 2, height / 2, 'battleground');
-    battleground.setDisplaySize(width, height);
-    battleground.setAlpha(0.3); // Menüde daha soluk
-    battleground.setTint(0x8888aa); // Hafif mavi-gri ton
+    // Savaş alanı arka planı - TileSprite ile scrolling efekti
+    this.spaceBackground = this.add.tileSprite(0, 0, width, height, 'battleground');
+    this.spaceBackground.setOrigin(0, 0);
+    this.spaceBackground.setDepth(-1);
+    this.spaceBackground.setAlpha(0.3); // Menüde daha soluk
+    this.spaceBackground.setTint(0x8888aa); // Hafif mavi-gri ton
 
     // Başlık
     const title = this.add.text(width / 2, height / 3, 'BULLETTYPE', {
@@ -125,5 +127,10 @@ export class MenuScene extends Phaser.Scene {
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
     }
+  }
+  
+  update(): void {
+    // Savaş arka planını hareket ettir
+    this.spaceBackground.tilePositionY -= 0.3;
   }
 }

@@ -21,6 +21,9 @@ export class GameScene extends Phaser.Scene {
   private heartsContainer!: Phaser.GameObjects.Container;
   private pauseOverlay!: Phaser.GameObjects.Container;
   private settingsMenu!: SettingsMenu;
+  
+  // Scrolling background için
+  private spaceBackground!: Phaser.GameObjects.TileSprite;
 
   // Cheat code sistemi - Konami Code tarzı
   private cheatCodeSequence: string[] = [];
@@ -53,7 +56,7 @@ export class GameScene extends Phaser.Scene {
     // Asteroid görselini yükle
     this.load.image('asteroid', '/images/asteroid.png');
     
-    // Savaş arka planını yükle (oyun alanı için)
+    // Savaş arka planını yükle
     this.load.image('battleground', '/images/savas.png');
     
     // Parçacık için basit bir grafik oluştur
@@ -67,14 +70,14 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.cameras.main;
 
-    // Savaş alanı arka planı
-    const battleground = this.add.image(width / 2, height / 2, 'battleground');
-    battleground.setDisplaySize(width, height);
-    battleground.setDepth(-1);
-    battleground.setAlpha(0.4); // Soluk görünüm
-    battleground.setTint(0x8888aa); // Hafif mavi-gri ton
+    // Savaş alanı arka planı - TileSprite ile scrolling efekti
+    this.spaceBackground = this.add.tileSprite(0, 0, width, height, 'battleground');
+    this.spaceBackground.setOrigin(0, 0);
+    this.spaceBackground.setDepth(-2);
+    this.spaceBackground.setAlpha(0.4);
+    this.spaceBackground.setTint(0x8888aa); // Hafif mavi-gri ton
 
-    // Yıldızlar oluştur
+    // Yıldızlar oluştur (ekstra derinlik için)
     this.createStars();
 
     // Oyun nesnelerini başlat
@@ -710,6 +713,10 @@ export class GameScene extends Phaser.Scene {
     if (this.isPaused) {
       return;
     }
+
+    // Savaş arka planını hareket ettir (aşağı doğru scroll)
+    // Uçak yukarı doğru gidiyor gibi görünecek
+    this.spaceBackground.tilePositionY -= 0.5;
 
     // Kelimeleri güncelle
     for (let i = this.fallingWords.length - 1; i >= 0; i--) {
