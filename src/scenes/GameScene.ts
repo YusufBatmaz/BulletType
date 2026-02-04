@@ -5,7 +5,9 @@ import { ParticleEffects } from '../effects/ParticleEffects';
 import { SoundManager } from '../audio/SoundManager';
 import { GameConfig, getWordForLevel } from '../config/GameConfig';
 import { SettingsMenu } from '../ui/SettingsMenu';
+import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import { PlaneSelector } from '../config/PlaneConfig';
+import { FirebaseService } from '../services/FirebaseService';
 
 export class GameScene extends Phaser.Scene {
   private plane!: Plane;
@@ -21,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private heartsContainer!: Phaser.GameObjects.Container;
   private pauseOverlay!: Phaser.GameObjects.Container;
   private settingsMenu!: SettingsMenu;
+  private leaderboardPanel!: LeaderboardPanel;
   
   // Scrolling background için
   private spaceBackground!: Phaser.GameObjects.TileSprite;
@@ -29,7 +32,7 @@ export class GameScene extends Phaser.Scene {
   private cheatCodeSequence: string[] = [];
   private cheatCodeActive: boolean = false;
   private cheatCodeText!: Phaser.GameObjects.Text;
-  private autoTypeInterval?: number;
+  private autoTypeInterval?: ReturnType<typeof setInterval>;
   
   // Gizli kod: Yukarı, Yukarı, Aşağı, Aşağı, Sol, Sağ, Sol, Sağ, B, A
   private readonly SECRET_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 
@@ -115,6 +118,12 @@ export class GameScene extends Phaser.Scene {
         this.plane.changeTexture(texture);
       }
     );
+
+    // Leaderboard paneli oluştur
+    const firebaseService = (this.game as any).firebaseService as FirebaseService;
+    if (firebaseService) {
+      this.leaderboardPanel = new LeaderboardPanel(firebaseService);
+    }
 
     // Klavye girişi - önceki listener'ı temizle
     this.input.keyboard?.removeAllListeners();
@@ -378,8 +387,7 @@ export class GameScene extends Phaser.Scene {
     if (this.isPaused) {
       // Enter ile ana menüye dön
       if (event.key === 'Enter') {
-        this.cleanupAndExit();
-        this.scene.start('MenuScene');
+        this.returnToMenu();
       }
       return;
     }
@@ -526,6 +534,27 @@ export class GameScene extends Phaser.Scene {
     // Duraklatma durumunu sıfırla
     this.isPaused = false;
     this.cheatCodeActive = false;
+  }
+
+  private async returnToMenu(): Promise<void> {
+    // Skoru kaydet (eğer kullanıcı giriş yaptıysa ve skor > 0)
+    if (this.score > 0) {
+      const firebaseService = (this.game as any).firebaseService as FirebaseService;
+      if (firebaseService && firebaseService.isLoggedIn()) {
+        try {
+          await firebaseService.saveScore(this.score);
+          console.log('Skor kaydedildi (menüye dönüş):', this.score);
+        } catch (error) {
+          console.error('Skor kaydetme hatası:', error);
+        }
+      }
+    }
+    
+    // Temizlik yap
+    this.cleanupAndExit();
+    
+    // Ana menüye dön
+    this.scene.start('MenuScene');
   }
 
   private processCharacter(char: string): void {
@@ -700,7 +729,18 @@ export class GameScene extends Phaser.Scene {
     this.updateHearts();
   }
 
-  private gameOver(): void {
+  private async gameOver(): Promise<void> {
+    // Skoru Firebase'e kaydet
+    const firebaseService = (this.game as any).firebaseService as FirebaseService;
+    if (firebaseService && firebaseService.isLoggedIn()) {
+      try {
+        await firebaseService.saveScore(this.score);
+        console.log('Skor kaydedildi:', this.score);
+      } catch (error) {
+        console.error('Skor kaydetme hatası:', error);
+      }
+    }
+    
     // Temizlik yap
     this.cleanupAndExit();
     

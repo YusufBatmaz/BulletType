@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Skorlar koleksiyonu - Her kullanıcının ID'si document ID olarak kullanılıyor
+    match /scores/{userId} {
+      // Herkes skorları okuyabilir
+      allow read: if true;
+      
+      // Kullanıcılar sadece kendi skorlarını oluşturabilir/güncelleyebilir
+      allow create, update: if request.auth != null 
+                            && request.auth.uid == userId
+                            && request.resource.data.userId == userId;
+      
+      // Kullanıcılar sadece kendi skorlarını silebilir
+      allow delete: if request.auth != null 
+                   && request.auth.uid == userId;
+    }
+  }
+}

@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { SoundManager } from '../audio/SoundManager';
 import { planeOptions, PlaneSelector } from '../config/PlaneConfig';
 
+import { FirebaseService } from '../services/FirebaseService';
+
 export class SettingsMenu {
   private scene: Phaser.Scene;
   private soundManager: SoundManager;
@@ -27,7 +29,7 @@ export class SettingsMenu {
 
   private createPlaneSelector(x: number, y: number): void {
     // Uçak seçimi etiketi
-    const label = this.scene.add.text(x, y - 60, 'PLANE', {
+    const label = this.scene.add.text(x, y - 60, 'UÇAK', {
       fontSize: '28px',
       color: '#00ffff',
       fontFamily: 'Courier New, monospace',
@@ -168,13 +170,13 @@ export class SettingsMenu {
 
     // Panel arka planı
     const panelWidth = 450;
-    const panelHeight = 500;
+    const panelHeight = 520;
     const panelBg = this.scene.add.rectangle(width / 2, height / 2, panelWidth, panelHeight, 0x000000, 0.95);
     panelBg.setStrokeStyle(4, 0x00ffff);
     this.container.add(panelBg);
 
     // Başlık
-    const title = this.scene.add.text(width / 2, height / 2 - 220, 'SETTINGS', {
+    const title = this.scene.add.text(width / 2, height / 2 - 220, 'AYARLAR', {
       fontSize: '36px',
       color: '#00ffff',
       fontFamily: 'Courier New, monospace',
@@ -193,13 +195,13 @@ export class SettingsMenu {
     // Efekt sesleri kontrolü
     this.createEffectsControl(width / 2, height / 2 + 125);
 
-    // Kapat butonu
-    this.createCloseButton(width / 2, height / 2 + 200);
+    // Alt butonlar (yan yana)
+    this.createBottomButtons(width / 2, height / 2 + 200);
   }
 
   private createMusicControl(x: number, y: number): void {
     // Müzik etiketi (sola)
-    const label = this.scene.add.text(x - 190, y, 'MUSIC', {
+    const label = this.scene.add.text(x - 190, y, 'MÜZİK', {
       fontSize: '20px',
       color: '#00ffff',
       fontFamily: 'Courier New, monospace',
@@ -329,7 +331,7 @@ export class SettingsMenu {
 
   private createEffectsControl(x: number, y: number): void {
     // Efekt sesleri etiketi (sola)
-    const label = this.scene.add.text(x - 190, y, 'EFFECTS', {
+    const label = this.scene.add.text(x - 190, y, 'EFEKTLER', {
       fontSize: '20px',
       color: '#00ff00',
       fontFamily: 'Courier New, monospace',
@@ -399,35 +401,134 @@ export class SettingsMenu {
     muteBtnText.setText(this.soundManager.areEffectsMutedState() ? '🔇' : '🔊');
   }
 
-  private createCloseButton(x: number, y: number): void {
-    const buttonBg = this.scene.add.rectangle(x, y, 200, 50, 0x000000);
-    buttonBg.setStrokeStyle(3, 0xff0066);
-    buttonBg.setInteractive({ useHandCursor: true });
-    this.container.add(buttonBg);
+  private createBottomButtons(x: number, y: number): void {
+    // FirebaseService'i al
+    const firebaseService = (this.scene.game as any).firebaseService;
+    const isLoggedIn = firebaseService && firebaseService.isLoggedIn();
 
-    const buttonText = this.scene.add.text(x, y, 'CLOSE', {
-      fontSize: '28px',
-      color: '#ff0066',
-      fontFamily: 'Courier New, monospace',
-      fontStyle: 'bold'
-    });
-    buttonText.setOrigin(0.5);
-    buttonText.setStroke('#440022', 3);
-    this.container.add(buttonText);
+    if (isLoggedIn) {
+      // Çıkış yap butonu (sol)
+      const logoutBg = this.scene.add.rectangle(x - 110, y, 180, 50, 0x000000);
+      logoutBg.setStrokeStyle(3, 0xffff00);
+      logoutBg.setInteractive({ useHandCursor: true });
+      this.container.add(logoutBg);
 
-    buttonBg.on('pointerover', () => {
-      buttonBg.setFillStyle(0xff0066, 0.2);
-      buttonText.setScale(1.05);
-    });
+      const logoutText = this.scene.add.text(x - 110, y, 'ÇIKIŞ YAP', {
+        fontSize: '22px',
+        color: '#ffff00',
+        fontFamily: 'Courier New, monospace',
+        fontStyle: 'bold'
+      });
+      logoutText.setOrigin(0.5);
+      logoutText.setStroke('#444400', 2);
+      this.container.add(logoutText);
 
-    buttonBg.on('pointerout', () => {
-      buttonBg.setFillStyle(0x000000);
-      buttonText.setScale(1);
-    });
+      logoutBg.on('pointerover', () => {
+        logoutBg.setFillStyle(0xffff00, 0.2);
+        logoutText.setScale(1.05);
+      });
 
-    buttonBg.on('pointerdown', () => {
-      this.toggleSettings();
-    });
+      logoutBg.on('pointerout', () => {
+        logoutBg.setFillStyle(0x000000);
+        logoutText.setScale(1);
+      });
+
+      logoutBg.on('pointerdown', async () => {
+        try {
+          await firebaseService.signOut();
+          
+          // Başarı mesajı göster
+          const successText = this.scene.add.text(x, y - 40, '✓ Çıkış yapıldı', {
+            fontSize: '16px',
+            color: '#00ff00',
+            fontFamily: 'Courier New, monospace'
+          });
+          successText.setOrigin(0.5);
+          this.container.add(successText);
+
+          // 1 saniye sonra login ekranına dön
+          this.scene.time.delayedCall(1000, () => {
+            this.scene.scene.start('LoginScene');
+          });
+        } catch (error) {
+          console.error('Çıkış hatası:', error);
+          
+          // Hata mesajı göster
+          const errorText = this.scene.add.text(x, y - 40, '✗ Çıkış yapılamadı', {
+            fontSize: '16px',
+            color: '#ff0000',
+            fontFamily: 'Courier New, monospace'
+          });
+          errorText.setOrigin(0.5);
+          this.container.add(errorText);
+
+          // 2 saniye sonra mesajı kaldır
+          this.scene.time.delayedCall(2000, () => {
+            errorText.destroy();
+          });
+        }
+      });
+
+      // Close butonu (sağ)
+      const closeBg = this.scene.add.rectangle(x + 110, y, 180, 50, 0x000000);
+      closeBg.setStrokeStyle(3, 0xff0066);
+      closeBg.setInteractive({ useHandCursor: true });
+      this.container.add(closeBg);
+
+      const closeText = this.scene.add.text(x + 110, y, 'KAPAT', {
+        fontSize: '28px',
+        color: '#ff0066',
+        fontFamily: 'Courier New, monospace',
+        fontStyle: 'bold'
+      });
+      closeText.setOrigin(0.5);
+      closeText.setStroke('#440022', 3);
+      this.container.add(closeText);
+
+      closeBg.on('pointerover', () => {
+        closeBg.setFillStyle(0xff0066, 0.2);
+        closeText.setScale(1.05);
+      });
+
+      closeBg.on('pointerout', () => {
+        closeBg.setFillStyle(0x000000);
+        closeText.setScale(1);
+      });
+
+      closeBg.on('pointerdown', () => {
+        this.toggleSettings();
+      });
+    } else {
+      // Sadece Close butonu (ortada, geniş)
+      const closeBg = this.scene.add.rectangle(x, y, 200, 50, 0x000000);
+      closeBg.setStrokeStyle(3, 0xff0066);
+      closeBg.setInteractive({ useHandCursor: true });
+      this.container.add(closeBg);
+
+      const closeText = this.scene.add.text(x, y, 'KAPAT', {
+        fontSize: '28px',
+        color: '#ff0066',
+        fontFamily: 'Courier New, monospace',
+        fontStyle: 'bold'
+      });
+      closeText.setOrigin(0.5);
+      closeText.setStroke('#440022', 3);
+      this.container.add(closeText);
+
+      closeBg.on('pointerover', () => {
+        closeBg.setFillStyle(0xff0066, 0.2);
+        closeText.setScale(1.05);
+      });
+
+      closeBg.on('pointerout', () => {
+        closeBg.setFillStyle(0x000000);
+        closeText.setScale(1);
+      });
+
+      closeBg.on('pointerdown', () => {
+        this.toggleSettings();
+      });
+    }
   }
 
   private toggleSettings(): void {

@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
 import { SoundManager } from '../audio/SoundManager';
 import { SettingsMenu } from '../ui/SettingsMenu';
+import { LeaderboardPanel } from '../ui/LeaderboardPanel';
+import { FirebaseService } from '../services/FirebaseService';
 
 export class GameOverScene extends Phaser.Scene {
   private finalScore: number = 0;
   private settingsMenu!: SettingsMenu;
+  private leaderboardPanel!: LeaderboardPanel;
   private spaceBackground!: Phaser.GameObjects.TileSprite;
 
   constructor() {
@@ -29,6 +32,19 @@ export class GameOverScene extends Phaser.Scene {
     
     if (soundManager) {
       this.settingsMenu = new SettingsMenu(this, soundManager, undefined, undefined);
+    }
+
+    // Leaderboard paneli oluştur ve skorları yenile
+    const firebaseService = (this.game as any).firebaseService as FirebaseService;
+    if (firebaseService) {
+      this.leaderboardPanel = new LeaderboardPanel(firebaseService);
+      
+      // Skorun kaydedilmesi için kısa bir gecikme sonra fresh data yükle
+      this.time.delayedCall(1000, () => {
+        if (this.leaderboardPanel) {
+          this.leaderboardPanel.forceUpdate();
+        }
+      });
     }
 
     // Savaş alanı arka planı - TileSprite ile scrolling efekti

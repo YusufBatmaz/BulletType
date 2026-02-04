@@ -23,14 +23,22 @@
             overflow: hidden;
         }
         
+        #main-wrapper {
+            display: flex;
+            gap: 0;
+            align-items: stretch;
+            height: 800px;
+        }
+        
         #game-container {
             box-shadow: 
                 0 0 30px rgba(0, 255, 255, 0.3),
                 0 0 60px rgba(0, 255, 255, 0.2),
                 inset 0 0 100px rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
+            border-radius: 10px 0 0 10px;
             overflow: hidden;
             border: 3px solid rgba(0, 255, 255, 0.4);
+            border-right: none;
             position: relative;
         }
         
@@ -53,6 +61,36 @@
             animation: scanlines 8s linear infinite;
         }
         
+        #leaderboard-container {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid rgba(0, 255, 255, 0.4);
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.3),
+                inset 0 0 50px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        #leaderboard-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #leaderboard-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        #leaderboard-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        #leaderboard-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.5);
+        }
+        
         @keyframes scanlines {
             0% { transform: translateY(0); }
             100% { transform: translateY(4px); }
@@ -60,7 +98,10 @@
     </style>
 </head>
 <body>
-    <div id="game-container"></div>
+    <div id="main-wrapper">
+        <div id="game-container"></div>
+        <div id="leaderboard-container"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

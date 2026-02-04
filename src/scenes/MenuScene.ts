@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
 import { SoundManager } from '../audio/SoundManager';
 import { SettingsMenu } from '../ui/SettingsMenu';
+import { LeaderboardPanel } from '../ui/LeaderboardPanel';
+import { FirebaseService } from '../services/FirebaseService';
 
 export class MenuScene extends Phaser.Scene {
   private static soundManager: SoundManager | null = null;
   private settingsMenu!: SettingsMenu;
+  private leaderboardPanel!: LeaderboardPanel;
   private visibilityHandler?: () => void;
   private spaceBackground!: Phaser.GameObjects.TileSprite;
   
@@ -47,6 +50,14 @@ export class MenuScene extends Phaser.Scene {
 
     // Ayarlar menüsü oluştur
     this.settingsMenu = new SettingsMenu(this, MenuScene.soundManager, undefined, undefined);
+
+    // Leaderboard paneli oluştur ve skorları yükle
+    const firebaseService = (this.game as any).firebaseService as FirebaseService;
+    if (firebaseService) {
+      this.leaderboardPanel = new LeaderboardPanel(firebaseService);
+      // Cache'i atla ve fresh data yükle
+      this.leaderboardPanel.forceUpdate();
+    }
 
     // Savaş alanı arka planı - TileSprite ile scrolling efekti
     this.spaceBackground = this.add.tileSprite(0, 0, width, height, 'battleground');
