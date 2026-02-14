@@ -19,9 +19,9 @@ export class MenuScene extends Phaser.Scene {
     // Uçak görsellerini yükle
     this.load.image('classic', '/images/ucaklar/classic.png');
     this.load.image('bit-striker', '/images/ucaklar/Bit-Striker.png');
-    this.load.image('sky-warden', '/images/ucaklar/Sky Warden.png');
-    this.load.image('nebula-ghost', '/images/ucaklar/Nebula Ghost.png');
-    this.load.image('apex-sentinel', '/images/ucaklar/Apex Sentinel.png');
+    this.load.image('sky-warden', '/images/ucaklar/Sky-Warden.png');
+    this.load.image('nebula-ghost', '/images/ucaklar/Nebula-Ghost.png');
+    this.load.image('apex-sentinel', '/images/ucaklar/Apex-Sentinel.png');
     this.load.image('stormbringer', '/images/ucaklar/Stormbringer.png');
     
     // Savaş arka planını yükle
